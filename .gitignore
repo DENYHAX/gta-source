@@ -1,0 +1,13 @@
+installer/_deps/
+installer/_work/
+__pycache__/
+*.pyc
+# never commit game files or anything built from them
+*.img
+*.dff
+*.txd
+*.col
+*.wav
+*.vtf
+*.mdl
+*.vpk
