@@ -32,7 +32,8 @@ GTA_STEAM_NAMES = ['Grand Theft Auto San Andreas', 'GTA San Andreas']
 CSS_STEAM_NAMES = ['Counter-Strike Source']
 GTA_FILES = ['spraycan.dff', 'spraycan.txd', 'male01.dff', 'csplay.dff']   # from models/gta3.img
 REQUIRED = [('CLEO.asi', 'CLEO 5 (cleo.li)'), ('cleo_redux.asi', 'CLEO Redux (re.cleo.li)'),
-            ('III.VC.SA.LimitAdjuster.asi', 'Open Limit Adjuster (github.com/GTAmodding/III.VC.SA.LimitAdjuster)')]
+            ('III.VC.SA.LimitAdjuster.asi', 'Open Limit Adjuster (github.com/GTAmodding/III.VC.SA.LimitAdjuster)'),
+            ('skygrad.asi', 'skygrad (github.com/GTAmodding/skygrad) - without it the sky has white/yellow boxes at a high FOV')]
 
 
 def log(*a):

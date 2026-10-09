@@ -69,11 +69,11 @@ other features listed below came later.*
 | **CLEO 5** (5.0 or newer, tested 5.4.0) | <https://github.com/cleolibrary/CLEO5>. It also installs the Ultimate ASI Loader. |
 | **CLEO Redux** (tested 1.5.1) | <https://re.cleo.li>. Only `cleo_redux.asi` is needed next to CLEO 5. Don't copy CLEO Redux's own `CLEO_PLUGINS` over CLEO 5's plugins. |
 | **Open Limit Adjuster** | <https://github.com/GTAmodding/III.VC.SA.LimitAdjuster>. The mod adds about 3000 models, more than the vanilla limit. The installer sets the needed values in its ini. |
+| **skygrad** | <https://github.com/GTAmodding/skygrad>. Copy `skygrad.asi` next to `gta_sa.exe`. Without it GTA draws white / yellow boxes at the sides of the sky at the wide CS:S FOV. |
 | **Python 3.11 or newer** (64-bit) | <https://www.python.org/downloads/>. Tick **"Add python.exe to PATH"**. Only needed to run the installer. |
 
 Recommended, not required:
 - [SilentPatch](https://github.com/CookiePLMonster/SilentPatch) for general fixes.
-- [skygrad](https://github.com/GTAmodding/skygrad) for a correct sky at a high FOV.
 - [III.VC.SA.WindowedMode](https://github.com/ThirteenAG/III.VC.SA.WindowedMode) for windowed mode.
 - Turning the in-game frame limiter **off**, because bhop is much better at a high FPS.
 
@@ -81,7 +81,7 @@ Recommended, not required:
 
 ## Installation
 
-1. Install GTA SA 1.0 US, CLEO 5, CLEO Redux and the Open Limit Adjuster (see above). Start the game once to check that it runs.
+1. Install GTA SA 1.0 US, CLEO 5, CLEO Redux, the Open Limit Adjuster and skygrad (see above). Start the game once to check that it runs.
 2. Download this repository (green **Code** button → *Download ZIP*) and unpack it anywhere.
 3. **Close GTA San Andreas**, then double-click **`install.bat`**. It will:
    - install the two Python packages it needs (`numpy`, `Pillow`);

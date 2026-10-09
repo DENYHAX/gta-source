@@ -167,16 +167,19 @@ function held(vk) { return !!keys[vk]; }
 function pressed(vk) { return !!keys[vk] && !prevKeys[vk]; }
 function preset() { return PRESETS[presetName]; }
 
+// GXT labels for the HUD texts. CLEO 5's Text.AddLabel is the one that reaches the game's text lookup when
+// CLEO Redux runs in delegate mode (FxtStore.insert does not); FxtStore is only the fallback.
+function label(k, str) { try { Text.AddLabel(k, str); } catch (e) { try { FxtStore.insert(k, str); } catch (e2) {} } }
 function fxt() {
-  FxtStore.insert("CSSPD", "~1~ u/s");
-  FxtStore.insert("CSBUY", "BUY MENU");
-  FxtStore.insert("CSWPN", "Weapon");
-  FxtStore.insert("CSPRC", "Price");
-  FxtStore.insert("CSDOL", "$~1~");
-  FxtStore.insert("CSDUM", " ");
-  BUY_LIST.forEach((id, i) => FxtStore.insert("CSB" + (i + 1), (i + 1) + ". " + WEAPONS[id].name));
-  FxtStore.insert("CSB9", "9. Ammo");
-  FxtStore.insert("CSHLP", "~k~~PED_SPRINT~ / 1-9: buy   B: close");
+  label("CSSPD", "~1~ u/s");
+  label("CSBUY", "BUY MENU");
+  label("CSWPN", "Weapon");
+  label("CSPRC", "Price");
+  label("CSDOL", "$~1~");
+  label("CSDUM", " ");
+  BUY_LIST.forEach((id, i) => label("CSB" + (i + 1), (i + 1) + ". " + WEAPONS[id].name));
+  label("CSB9", "9. Ammo");
+  label("CSHLP", "~k~~PED_SPRINT~ / 1-9: buy   B: close");
 }
 
 function loadSound(name) {
@@ -693,7 +696,7 @@ function ch_setPos(p) { try { player.getChar().setCoordinatesNoOffset(p.x, p.y, 
 // Water level like Source: 1 = feet wet (normal movement), 2 = waist deep (swimming), 3 = eyes under water.
 // GTA's own buoyancy and swim task are switched off for the player while CS mode runs (see buoyHookInit), so the
 // velocity stays ours; drowning still goes through GTA's CPlayerPed::HandlePlayerBreath (and its breath bar).
-const A_GET_WATER_LEVEL = 0x6EB690, A_HANDLE_BREATH = 0x60A8D0, A_FX_SPLASH = 0x4A1070, A_G_FX = 0xA9AE00;
+const A_GET_WATER_LEVEL = 0x6EB690, A_FX_SPLASH = 0x4A1070, A_G_FX = 0xA9AE00, A_HUD_LAST_BREATH = 0xBAA3FC, A_TIME_MS = 0xB7CB84;
 let gwlFn = null, gwlBuf = 0, waterJumpT = 0, wjVel = { x: 0, y: 0 }, lastWl = 0, swimT = 0, swimI = 0, waterInfo = { wl: 0, wz: 0 };
 const f2i = (() => { const dv = new DataView(new ArrayBuffer(4)); return v => { dv.setFloat32(0, v, true); return dv.getInt32(0, true); }; })();
 function waterLevelAt(x, y, z) {   // CWaterLevel::GetWaterLevel(x, y, z, &level, bTouchingWater, normals) -> surface z or null
@@ -754,6 +757,24 @@ function waterMove(TICK, fmove, smove, yawDeg, swimUp, maxs, accel, p) {
     }
   }
 }
+// Same as CPlayerPed::HandlePlayerBreath(true, 1): CPlayerData (ped +0x480) m_fBreath +0x44 goes down by the GTA
+// timestep, and bit 0x80 of +0x34 (m_bRequireHandleBreath) is cleared so CPlayerPed::ProcessControl does not refill
+// it in the same frame. Out of air: CS:S style drowning, 10 damage per second.
+let drownAcc = 0;
+function drown(ch, ped, dt) {
+  try {
+    const pd = Memory.ReadU32(ped + 0x480, false) >>> 0;
+    if (!pd) return;
+    const ts = Memory.ReadFloat(A_TIMESTEP, false);
+    const br = Memory.ReadFloat(pd + 0x44, false);
+    if (br > 0) { Memory.WriteFloat(pd + 0x44, Math.max(0, br - ts), false); drownAcc = 0; }
+    else {
+      drownAcc += dt;
+      if (drownAcc >= 1) { drownAcc -= 1; ch.setHealth(Math.max(0, ch.getHealth() - 10)); }
+    }
+    Memory.WriteU32(pd + 0x34, Memory.ReadU32(pd + 0x34, false) & ~0x80, false);
+  } catch (e) {}
+}
 function waterEffects(ch, ped, c, wat, dt, onGround) {
   const sp = Math.hypot(vel.x, vel.y, vel.z);
   if (wat.wl >= 2 && lastWl < 2 && vel.z < -150) {                         // splash on entry
@@ -765,7 +786,12 @@ function waterEffects(ch, ped, c, wat, dt, onGround) {
     swimT -= dt;
     if (sp > 60 && swimT <= 0) { swimT = 0.8; playSound("wade" + (1 + (swimI++ % 4)), 0.45); }
   }
-  if (wat.wl === 3) { try { Memory.CallMethod(A_HANDLE_BREATH, ped, 2, 0, 1, f2i(1.0)); } catch (e) {} }   // GTA breath / drowning
+  if (wat.wl === 3) drown(ch, ped, dt);       // eyes under water: GTA's breath bar runs down, then you drown
+  else drownAcc = 0;
+  // CHud::DrawPlayerInfo starts the breath bar only for a ped with a swim task (ours has none) and then keeps it on
+  // while breath < max as long as m_LastBreathTime (0xBAA3FC) is younger than 500 ms: keep it fresh while swimming.
+  if (wat.wl >= 2) { try { Memory.WriteU32(A_HUD_LAST_BREATH, Memory.ReadU32(A_TIME_MS, false), false); } catch (e) {} }
+  if (CFG.debug && wat.wl !== lastWl) log("[cssource] water level " + lastWl + " -> " + wat.wl + " (surface " + wat.wz.toFixed(2) + ")");
   lastWl = wat.wl;
 }
 let tickAcc = 0;
